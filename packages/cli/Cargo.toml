@@ -43,7 +43,7 @@ tokio = { workspace = true, features = ["full"] }
 tokio-stream = { workspace = true }
 tokio-tungstenite = { workspace = true }
 chrono = { workspace = true }
-anyhow = { workspace = true }
+anyhow = { workspace = true, features = ["std"] }
 hyper = { workspace = true }
 hyper-util = { workspace = true }
 hyper-rustls = { workspace = true }

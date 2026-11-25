@@ -206,7 +206,7 @@ vello = "0.6"
 
 # a fork of pretty please for tests - let's get off of this if we can!
 prettier-please = { version = "0.3.0", features = ["verbatim"] }
-anyhow = "1.0.98"
+anyhow = { version = "1.0.98", default-features = false }
 clap = { version = "4.5.40" }
 askama_escape = "0.13.0"
 tracing = "0.1.41"
@@ -469,7 +469,7 @@ rand = { workspace = true, features = ["small_rng"] }
 form_urlencoded = "1.2.1"
 async-std = "1.13.1"
 web-time = "1.1.0"
-anyhow = { workspace = true }
+anyhow = { workspace = true, features = ["std"] }
 thiserror = { workspace = true }
 bytes = { workspace = true }
 futures = { workspace = true }

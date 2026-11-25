@@ -20,7 +20,7 @@ tracing = { workspace = true }
 thiserror = { workspace = true }
 dioxus-fullstack-core = { workspace = true }
 http = { workspace = true }
-anyhow = { workspace = true }
+anyhow = { workspace = true, features = ["std"] }
 dioxus-core = { workspace = true }
 dioxus-signals = { workspace = true }
 dioxus-hooks = { workspace = true }
