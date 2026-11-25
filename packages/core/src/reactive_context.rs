@@ -1,10 +1,11 @@
 use crate::{current_scope_id, scope_context::Scope, tasks::SchedulerMsg, Runtime, ScopeId};
 use futures_channel::mpsc::UnboundedReceiver;
 use generational_box::{BorrowMutError, GenerationalBox, SyncStorage};
+use rustc_hash::FxHashSet;
 use std::{
     cell::RefCell,
     collections::HashSet,
-    hash::Hash,
+    hash::{BuildHasher, Hash},
     sync::{Arc, Mutex},
 };
 
@@ -293,7 +294,7 @@ struct Inner {
     update: Box<dyn FnMut() + Send + Sync>,
 
     // Subscribers to this context
-    subscribers: HashSet<PointerHash<dyn SubscriberList + Send + Sync>>,
+    subscribers: FxHashSet<PointerHash<dyn SubscriberList + Send + Sync>>,
 
     // Debug information for signal subscriptions
     #[cfg(debug_assertions)]
@@ -348,7 +349,7 @@ impl Subscribers {
     /// Create a new list of subscribers.
     pub fn new() -> Self {
         Subscribers {
-            inner: Arc::new(Mutex::new(HashSet::new())),
+            inner: Arc::new(Mutex::new(FxHashSet::<ReactiveContext>::default())),
         }
     }
 
@@ -386,7 +387,7 @@ pub trait SubscriberList: Send + Sync {
     fn visit(&self, f: &mut dyn FnMut(&ReactiveContext));
 }
 
-impl SubscriberList for Mutex<HashSet<ReactiveContext>> {
+impl<S: BuildHasher + Send + Sync> SubscriberList for Mutex<HashSet<ReactiveContext, S>> {
     fn add(&self, subscriber: ReactiveContext) {
         if let Ok(mut lock) = self.lock() {
             lock.insert(subscriber);

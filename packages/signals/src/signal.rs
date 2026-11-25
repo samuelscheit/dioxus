@@ -4,7 +4,8 @@ use crate::{
 };
 use dioxus_core::{IntoAttributeValue, IntoDynNode, ReactiveContext, ScopeId, Subscribers};
 use generational_box::{BorrowResult, Storage, SyncStorage, UnsyncStorage};
-use std::{collections::HashSet, ops::Deref, sync::Arc, sync::Mutex};
+use rustc_hash::FxHashSet;
+use std::{ops::Deref, sync::Arc, sync::Mutex};
 
 #[doc = include_str!("../docs/signals.md")]
 #[doc(alias = "State")]
@@ -23,7 +24,7 @@ pub type SyncSignal<T> = Signal<T, SyncStorage>;
 
 /// The data stored for tracking in a signal.
 pub struct SignalData<T> {
-    pub(crate) subscribers: Arc<Mutex<HashSet<ReactiveContext>>>,
+    pub(crate) subscribers: Arc<Mutex<FxHashSet<ReactiveContext>>>,
     pub(crate) value: T,
 }
 
