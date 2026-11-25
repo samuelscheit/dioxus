@@ -199,7 +199,7 @@
 //! - Linux (x86_64, aarch64)
 //! - macOS (x86_64, aarch64)
 //! - Windows (x86_64, arm64)
-//! - WebAssembly (wasm32)
+//! - WebAssembly (wasm32, in the browser: enable the `wasm-patching` feature)
 //!
 //! If you have a new platform you'd like to see supported, please open an issue on the Subsecond repository.
 //! We are keen to add support for new platforms like wasm64, riscv64, and more.
@@ -305,6 +305,10 @@ pub unsafe fn get_jump_table() -> Option<&'static JumpTable> {
 
     Some(unsafe { &*ptr })
 }
+#[cfg_attr(
+    all(target_arch = "wasm32", not(feature = "wasm-patching")),
+    allow(dead_code)
+)]
 unsafe fn commit_patch(table: JumpTable) {
     APP_JUMP_TABLE.store(
         Box::into_raw(Box::new(table)),
@@ -495,7 +499,13 @@ impl<A, M, F: HotFunction<A, M>> HotFn<A, M, F> {
 ///
 /// This function will load the library and thus allocates. In cannot be used when the program is
 /// stopped (ie in a signal handler).
-pub unsafe fn apply_patch(mut table: JumpTable) -> Result<(), PatchError> {
+pub unsafe fn apply_patch(
+    #[cfg_attr(
+        all(target_arch = "wasm32", not(feature = "wasm-patching")),
+        allow(unused_mut)
+    )]
+    mut table: JumpTable,
+) -> Result<(), PatchError> {
     // On non-wasm platforms we can just use libloading and the known aslr offsets to load the library
     #[cfg(any(unix, windows))]
     {
@@ -546,8 +556,18 @@ pub unsafe fn apply_patch(mut table: JumpTable) -> Result<(), PatchError> {
         commit_patch(table);
     };
 
+    // Without `wasm-patching` the browser loader (and its wasm-bindgen/js-sys/web-sys imports) is
+    // not compiled in, so wasm32 binaries that never receive patches stay free of them.
+    #[cfg(all(target_arch = "wasm32", not(feature = "wasm-patching")))]
+    {
+        drop(table);
+        return Err(PatchError::Dlopen(
+            "subsecond was built without the `wasm-patching` feature".to_string(),
+        ));
+    }
+
     // On wasm, we need to download the module, compile it, and then run it.
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(all(target_arch = "wasm32", feature = "wasm-patching"))]
     wasm_bindgen_futures::spawn_local(async move {
         use js_sys::{
             ArrayBuffer, Object, Reflect,
@@ -687,6 +707,7 @@ pub unsafe fn apply_patch(mut table: JumpTable) -> Result<(), PatchError> {
         unsafe { commit_patch(table) };
     });
 
+    #[allow(unreachable_code)]
     Ok(())
 }
 
